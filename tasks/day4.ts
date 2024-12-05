@@ -5,45 +5,54 @@ function countXMAS(data: string[]) {
     const phraseLastIndex = 3;
 
     const matrix = data.flatMap((x) => x.split(''));
-    let result = 0;
-    for (let i = 0; i < matrix.length; i++) {
-        const rowPos = i % rowLength;
+    const result = matrix
+        .map((_, i) => {
+            const rowPos = i % rowLength;
 
-        const row = [matrix[i], matrix[i + 1], matrix[i + 2], matrix[i + 3]];
-        const column = [
-            matrix[i],
-            matrix[i + rowLength],
-            matrix[i + rowLength * 2],
-            matrix[i + rowLength * 3]
-        ];
-        const diagDownRight = [
-            matrix[i],
-            matrix[i + rowLength + 1],
-            matrix[i + rowLength * 2 + 2],
-            matrix[i + rowLength * 3 + 3]
-        ];
-        const diagDownLeft = [
-            matrix[i],
-            matrix[i + rowLength - 1],
-            matrix[i + rowLength * 2 - 2],
-            matrix[i + rowLength * 3 - 3]
-        ];
+            const column = [
+                matrix[i],
+                matrix[i + rowLength],
+                matrix[i + rowLength * 2],
+                matrix[i + rowLength * 3]
+            ];
 
-        const placesToCheck: string[][] = [column];
+            const placesToCheck: string[][] = [column];
 
-        if (rowPos + phraseLastIndex < rowLength) {
-            placesToCheck.push(row);
-            placesToCheck.push(diagDownRight);
-        }
-        if (rowPos - phraseLastIndex >= 0) {
-            placesToCheck.push(diagDownLeft);
-        }
+            if (rowPos + phraseLastIndex < rowLength) {
+                const row = [
+                    matrix[i],
+                    matrix[i + 1],
+                    matrix[i + 2],
+                    matrix[i + 3]
+                ];
 
-        result += placesToCheck
-            .map((x) => x.join(''))
-            .map((x) => Number(x == 'XMAS' || x == 'SAMX'))
-            .reduce((prev, curr) => prev + curr);
-    }
+                const diagDownRight = [
+                    matrix[i],
+                    matrix[i + rowLength + 1],
+                    matrix[i + rowLength * 2 + 2],
+                    matrix[i + rowLength * 3 + 3]
+                ];
+
+                placesToCheck.push(row);
+                placesToCheck.push(diagDownRight);
+            }
+            if (rowPos - phraseLastIndex >= 0) {
+                const diagDownLeft = [
+                    matrix[i],
+                    matrix[i + rowLength - 1],
+                    matrix[i + rowLength * 2 - 2],
+                    matrix[i + rowLength * 3 - 3]
+                ];
+
+                placesToCheck.push(diagDownLeft);
+            }
+
+            return placesToCheck
+                .map((x) => x.join(''))
+                .map((x) => Number(x == 'XMAS' || x == 'SAMX'))
+                .reduce((prev, curr) => prev + curr);
+        })
+        .reduce((x, y) => x + y);
 
     return result;
 }

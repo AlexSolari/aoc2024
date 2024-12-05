@@ -89,11 +89,6 @@ export async function pt2() {
     }
 
     return fixedInputs
-        .map((arr) => {
-            rules.forEach((rule) => rule.fix(arr));
-
-            return arr;
-        })
         .map((arr) => arr[Math.floor(arr.length / 2)])
         .reduce((x, y) => x + y);
 }
