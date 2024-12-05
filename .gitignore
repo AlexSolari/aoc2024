@@ -1,0 +1,4 @@
+node_modules/
+tasks/data/
+tasks/template
+bun.lockb
