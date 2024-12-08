@@ -1,3 +1,4 @@
+import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 
 enum Direction {
@@ -7,9 +8,12 @@ enum Direction {
     Left
 }
 
-interface DirectionalPoint {
+interface Point {
     x: number;
     y: number;
+}
+
+interface DirectionalPoint extends Point {
     direction: Direction;
 }
 
@@ -17,20 +21,16 @@ class GameMap extends Array<Array<boolean>> {
     maxX = 0;
     maxY = 0;
 
-    playerX = 0;
-    playerY = 0;
+    start: Point = { x: 0, y: 0 };
+
+    playerPos: Point = { x: 0, y: 0 };
     playerDirection = Direction.Down;
 
-    probeX = 0;
-    probeY = 0;
+    probePos: Point = { x: 0, y: 0 };
     probeDirection = Direction.Down;
 
-    obstacleX = 0;
-    obstacleY = 0;
-
-    pointsVisited: DirectionalPoint[] = [];
-
-    possibleLoops: [number, number][] = [];
+    pointsVisited: ObjectSet<Point> = new ObjectSet<Point>();
+    possibleLoops: ObjectSet<Point> = new ObjectSet<Point>();
 
     constructor(data: string[]) {
         super();
@@ -39,14 +39,12 @@ class GameMap extends Array<Array<boolean>> {
             this[i] = [];
             row.split('').forEach((cell, i2) => {
                 if (cell == '^') {
-                    this.playerX = this.probeX = i2;
-                    this.playerY = this.probeY = i;
-
-                    this.pointsVisited.push({
-                        x: this.playerX,
-                        y: this.playerY,
-                        direction: this.playerDirection
-                    } as DirectionalPoint);
+                    this.playerPos = {
+                        x: i2,
+                        y: i
+                    };
+                    this.start = { ...this.playerPos };
+                    this.pointsVisited.add({ ...this.playerPos });
                 }
 
                 this[i][i2] = cell != '#';
@@ -57,23 +55,26 @@ class GameMap extends Array<Array<boolean>> {
         this.maxX = this[0].length - 1;
     }
 
-    getNextCell(x: number, y: number, direction: Direction) {
+    //#region Utils
+
+    private getNextCell({ x, y }: Point, direction: Direction) {
         let nextX = x;
         let nextY = y;
-        let nextVal = true;
+        let nextVal: boolean;
+
         switch (direction) {
             case Direction.Down:
                 nextY = y - 1;
 
                 if (nextY < 0 || nextX < 0 || nextX > this.maxX) {
-                    break;
+                    return null;
                 }
                 nextVal = this[nextY][nextX];
                 break;
             case Direction.Up:
                 nextY = y + 1;
                 if (nextY > this.maxY || nextX < 0 || nextX > this.maxX) {
-                    break;
+                    return null;
                 }
 
                 nextVal = this[nextY][nextX];
@@ -81,7 +82,7 @@ class GameMap extends Array<Array<boolean>> {
             case Direction.Left:
                 nextX = x + 1;
                 if (nextX > this.maxX || nextY < 0 || nextY > this.maxX) {
-                    break;
+                    return null;
                 }
 
                 nextVal = this[nextY][nextX];
@@ -89,7 +90,7 @@ class GameMap extends Array<Array<boolean>> {
             case Direction.Right:
                 nextX = x - 1;
                 if (nextX < 0 || nextY < 0 || nextY > this.maxX) {
-                    break;
+                    return null;
                 }
 
                 nextVal = this[nextY][nextX];
@@ -99,7 +100,7 @@ class GameMap extends Array<Array<boolean>> {
         return { nextX, nextY, nextVal };
     }
 
-    getNextDirection(direction: Direction) {
+    private getNextDirection(direction: Direction) {
         switch (direction) {
             case Direction.Up:
                 return Direction.Right;
@@ -112,92 +113,72 @@ class GameMap extends Array<Array<boolean>> {
         }
     }
 
-    movePlayer(launchProbe: boolean) {
-        if (
-            !(
-                this.playerX <= this.maxX &&
-                this.playerY <= this.maxY &&
-                this.playerX >= 0 &&
-                this.playerY >= 0
-            )
-        ) {
+    private isPointInBounds(p: Point) {
+        return p.x <= this.maxX && p.y <= this.maxY && p.x >= 0 && p.y >= 0;
+    }
+
+    //#endregion
+
+    movePlayer() {
+        if (!this.isPointInBounds(this.playerPos)) {
             return false;
         }
 
-        const nextCell = this.getNextCell(
-            this.playerX,
-            this.playerY,
-            this.playerDirection
-        );
+        const nextCell = this.getNextCell(this.playerPos, this.playerDirection);
 
-        this.probeX = this.playerX;
-        this.probeY = this.playerY;
-        this.probeDirection = this.playerDirection;
+        if (nextCell == null) {
+            return false;
+        }
 
         if (!nextCell.nextVal) {
             this.playerDirection = this.getNextDirection(this.playerDirection);
+            return true;
         } else {
             switch (this.playerDirection) {
                 case Direction.Down:
-                    this.playerY -= 1;
+                    this.playerPos.y -= 1;
                     break;
                 case Direction.Up:
-                    this.playerY += 1;
+                    this.playerPos.y += 1;
                     break;
                 case Direction.Left:
-                    this.playerX += 1;
+                    this.playerPos.x += 1;
                     break;
                 case Direction.Right:
-                    this.playerX -= 1;
+                    this.playerPos.x -= 1;
                     break;
             }
-
-            const pointCoords = {
-                x: this.playerX,
-                y: this.playerY,
-                direction: this.playerDirection
-            } as DirectionalPoint;
-            if (
-                this.pointsVisited.find(
-                    (p) => p.x == pointCoords.x && p.y == pointCoords.y
-                ) == undefined
-            ) {
-                this.pointsVisited.push(pointCoords);
-            }
-
-            if (launchProbe) {
-                const obstacle = this.getNextCell(
-                    this.playerX,
-                    this.playerY,
-                    this.playerDirection
-                );
-
-                if (obstacle.nextVal) {
-                    this.obstacleX = obstacle.nextX;
-                    this.obstacleY = obstacle.nextY;
-
-                    this.launchProbe();
-                }
+            if (!this.pointsVisited.has(this.playerPos)) {
+                this.pointsVisited.add({ ...this.playerPos });
             }
         }
 
         return true;
     }
 
+    //#region Probe
+
+    probe({ x, y }: Point) {
+        this[y][x] = false;
+        const loopFound = this.launchProbe();
+        this[y][x] = true;
+
+        return loopFound;
+    }
+
     private launchProbe() {
         const probeCoords: DirectionalPoint[] = [];
         let lastProbeCoords: DirectionalPoint;
         let canMoveProbe = true;
-        /*console.log('launching probe, obstacle at ', [
-            this.obstacleX,
-            this.obstacleY
-        ]);*/
+
+        this.probePos = { ...this.start };
+        this.probeDirection = Direction.Down;
+
         do {
             canMoveProbe = this.moveProbe();
-            //console.log('probe at ', [this.probeX, this.probeY]);
+
             lastProbeCoords = {
-                x: this.probeX,
-                y: this.probeY,
+                ...this.probePos,
                 direction: this.probeDirection
             };
 
@@ -213,87 +194,83 @@ class GameMap extends Array<Array<boolean>> {
                         x.direction == lastProbeCoords.direction
                 )
             ) {
-                if (
-                    !this.possibleLoops.find(
-                        (lp) =>
-                            lp[0] == this.obstacleX && lp[1] == this.obstacleY
-                    )
-                ) {
-                    //console.log('loop:', [this.obstacleX, this.obstacleY]);
-                    this.possibleLoops.push([this.obstacleX, this.obstacleY]);
-                    //console.log(this.possibleLoops.length);
-                }
-
-                break;
+                return true;
             }
             probeCoords.push(lastProbeCoords);
         } while (canMoveProbe);
 
-        //console.log('probe finished');
+        return false;
     }
 
-    moveProbe() {
-        if (
-            !(
-                this.probeX <= this.maxX &&
-                this.probeY <= this.maxY &&
-                this.probeX >= 0 &&
-                this.probeY >= 0
-            )
-        ) {
+    private moveProbe() {
+        if (!this.isPointInBounds(this.probePos)) {
             return false;
         }
 
-        const nextCell = this.getNextCell(
-            this.probeX,
-            this.probeY,
-            this.probeDirection
-        );
+        const nextCell = this.getNextCell(this.probePos, this.probeDirection);
 
-        if (
-            !nextCell.nextVal ||
-            (nextCell.nextX == this.obstacleX &&
-                nextCell.nextY == this.obstacleY)
-        ) {
+        if (nextCell == null) {
+            return false;
+        }
+
+        if (!nextCell.nextVal) {
             this.probeDirection = this.getNextDirection(this.probeDirection);
         } else {
             switch (this.probeDirection) {
                 case Direction.Down:
-                    this.probeY -= 1;
+                    this.probePos.y -= 1;
                     break;
                 case Direction.Up:
-                    this.probeY += 1;
+                    this.probePos.y += 1;
                     break;
                 case Direction.Left:
-                    this.probeX += 1;
+                    this.probePos.x += 1;
                     break;
                 case Direction.Right:
-                    this.probeX -= 1;
+                    this.probePos.x -= 1;
                     break;
             }
         }
 
         return true;
     }
+
+    //#endregion
 }
 
-async function getMap(launchProbe: boolean) {
+async function getMap() {
     return await parse('tasks\\data\\6.txt', (x) => {
         const map = new GameMap(x.split('\n').map((y) => y.trim()));
-
-        while (map.movePlayer(launchProbe)) {}
-        map.pointsVisited.pop();
-
         return map;
     });
 }
 
 export async function pt1() {
-    const map = await getMap(false);
+    const map = await getMap();
+
+    let canMove = true;
+    do {
+        canMove = map.movePlayer();
+    } while (canMove);
 
     return map.pointsVisited.length;
 }
 export async function pt2() {
-    //const map = await getMap(true);
-    //return map.possibleLoops.length;
+    const map = await getMap();
+    let canMove = true;
+
+    do {
+        canMove = map.movePlayer();
+    } while (canMove);
+
+    const points = [...map.pointsVisited];
+    points.shift();
+
+    let loopCount = 0;
+    for (const visitedPoint of points) {
+        if (map.probe(visitedPoint)) {
+            loopCount += 1;
+        }
+    }
+    return loopCount;
 }
