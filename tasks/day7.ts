@@ -57,7 +57,7 @@ function concatNumbers(x: number, y: number) {
 }
 
 async function getData() {
-    return await parse('tasks\\data\\test.txt', (x) => {
+    return await parse('tasks\\data\\7.txt', (x) => {
         return x
             .trim()
             .split('\n')
