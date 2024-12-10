@@ -1,6 +1,14 @@
 export class ObjectSet<T> {
     innerMap: Map<string, T> = new Map<string, T>();
 
+    constructor(arr?: T[]) {
+        if (arr) {
+            for (const el of arr) {
+                this.add(el);
+            }
+        }
+    }
+
     [Symbol.iterator]() {
         return this.innerMap.values();
     }
