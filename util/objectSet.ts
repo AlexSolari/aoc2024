@@ -1,7 +1,11 @@
 export class ObjectSet<T> {
     innerMap: Map<string, T> = new Map<string, T>();
+    keyGen: (obj: T) => string;
 
-    constructor(arr?: T[]) {
+    constructor(arr?: T[], keyGen?: (obj: T) => string) {
+        this.keyGen =
+            keyGen != undefined ? keyGen : (obj: T) => JSON.stringify(obj);
+
         if (arr) {
             for (const el of arr) {
                 this.add(el);
@@ -14,15 +18,15 @@ export class ObjectSet<T> {
     }
 
     add(item: T) {
-        this.innerMap.set(JSON.stringify(item), item);
+        this.innerMap.set(this.keyGen(item), item);
     }
 
     delete(item: T) {
-        return this.innerMap.delete(JSON.stringify(item));
+        return this.innerMap.delete(this.keyGen(item));
     }
 
     has(item: T) {
-        return this.innerMap.has(JSON.stringify(item));
+        return this.innerMap.has(this.keyGen(item));
     }
 
     get length() {
