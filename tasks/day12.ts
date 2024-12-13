@@ -1,3 +1,4 @@
+import { dfs } from '../util/dfs';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 
@@ -68,22 +69,6 @@ function getAreaAndPerimeter(region: GridCell[]) {
         area,
         perimeter
     };
-}
-
-function dfs(
-    cell: GridCell,
-    area: GridCell[],
-    visited: ObjectSet<GridCell>,
-    getNext: (pivot: GridCell) => GridCell[]
-) {
-    if (visited.has(cell)) return;
-
-    visited.add(cell);
-    area.push(cell);
-
-    for (const neighbor of getNext(cell)) {
-        dfs(neighbor, area, visited, getNext);
-    }
 }
 
 function findRegions(grid: GridCell[][]): GridCell[][] {
