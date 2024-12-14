@@ -1,48 +1,9 @@
 import { dfs } from '../util/dfs';
+import { GridCell, up, down, left, right, value } from '../util/gridcell';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 
-const up = Symbol('up'),
-    down = Symbol('down'),
-    left = Symbol('left'),
-    right = Symbol('right'),
-    value = Symbol('value');
-
-class GridCell {
-    x!: number;
-    y!: number;
-
-    get next(): GridCell[] {
-        return [this[up], this[down], this[left], this[right]].filter(
-            (x) => x != undefined
-        );
-    }
-
-    get key() {
-        return `${this.x};${this.y}`;
-    }
-
-    [up]: GridCell | undefined;
-    [down]: GridCell | undefined;
-    [left]: GridCell | undefined;
-    [right]: GridCell | undefined;
-    [value]: string = 'null';
-
-    constructor(val: string, x?: number, y?: number) {
-        this[value] = val;
-
-        if (x != undefined && y != undefined) {
-            this.setCoords(x, y);
-        }
-    }
-
-    setCoords(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-    }
-}
-
-function getAreaAndPerimeter(region: GridCell[]) {
+function getAreaAndPerimeter(region: GridCell<string>[]) {
     const area = region.length;
     let perimeter = 0;
 
@@ -71,14 +32,14 @@ function getAreaAndPerimeter(region: GridCell[]) {
     };
 }
 
-function findRegions(grid: GridCell[][]): GridCell[][] {
-    const regions: GridCell[][] = [];
-    const visited = new ObjectSet<GridCell>([], (obj) => obj.key);
+function findRegions(grid: GridCell<string>[][]) {
+    const regions: GridCell<string>[][] = [];
+    const visited = new ObjectSet<GridCell<string>>([], (obj) => obj.key);
 
     for (const row of grid) {
         for (const cell of row) {
             if (!visited.has(cell)) {
-                const region: GridCell[] = [];
+                const region: GridCell<string>[] = [];
 
                 dfs(cell, region, visited, (cell) =>
                     cell.next.filter((x) => !visited.has(x))
@@ -93,13 +54,13 @@ function findRegions(grid: GridCell[][]): GridCell[][] {
     return regions;
 }
 
-function groupAdjacentGridCells(points: GridCell[]): GridCell[][] {
-    const groups: GridCell[][] = [];
-    const visited = new ObjectSet<GridCell>([], (obj) => obj.key);
+function groupAdjacentGridCells(points: GridCell<string>[]) {
+    const groups: GridCell<string>[][] = [];
+    const visited = new ObjectSet<GridCell<string>>([], (obj) => obj.key);
 
     for (const point of points) {
         if (!visited.has(point)) {
-            const group: GridCell[] = [];
+            const group: GridCell<string>[] = [];
 
             dfs(point, group, visited, (point) =>
                 points.filter((p) => !visited.has(p) && point.next.includes(p))
@@ -111,7 +72,7 @@ function groupAdjacentGridCells(points: GridCell[]): GridCell[][] {
     return groups;
 }
 
-function getCorners(region: GridCell[]) {
+function getCorners(region: GridCell<string>[]) {
     const noTop = groupAdjacentGridCells(
         region.filter((x) => x[up] == undefined)
     ).length;

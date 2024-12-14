@@ -1,57 +1,28 @@
+import { down, GridCell, left, right, up, value } from '../util/gridcell';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 
-interface CellData {
-    value: number;
-    x: number;
-    y: number;
-}
-
-class GridCell {
-    value: number;
-    x!: number;
-    y!: number;
-
-    cellData!: CellData;
-    next: GridCell[] = [];
-
-    constructor(value: number) {
-        this.value = value;
-    }
-
-    setCoords(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-
-        this.cellData = {
-            value: this.value,
-            x: this.x,
-            y: this.y
-        };
-    }
-}
-
 class TreeNode {
-    node: CellData;
+    node: GridCell<number>;
     children: TreeNode[];
 
-    constructor(value: CellData, path?: TreeNode[]) {
+    constructor(value: GridCell<number>, path?: TreeNode[]) {
         this.node = value;
         this.children = path ??= [];
     }
 }
 
-function buildTree(root: GridCell): TreeNode {
-    if (root.next.length == 0) return new TreeNode(root.cellData);
+function buildTree(root: GridCell<number>): TreeNode {
+    if (root.next.length == 0) return new TreeNode(root);
 
     return new TreeNode(
-        root.cellData,
-        root.next.map((x) => new TreeNode(x.cellData, [buildTree(x)]))
+        root,
+        root.next.map((x) => new TreeNode(x, [buildTree(x)]))
     );
 }
 
 function find9(root: TreeNode): TreeNode[] {
-    if (root.node.value == 9) return [root];
+    if (root.node[value] == 9) return [root];
 
     if (root.children.length == 0) return [];
 
@@ -67,9 +38,9 @@ function getData() {
                 x
                     .trim()
                     .split('')
-                    .map((c) => new GridCell(Number(c)))
+                    .map((c) => new GridCell<number>(Number(c)))
             );
-        const possibleStarts: GridCell[] = [];
+        const possibleStarts: GridCell<number>[] = [];
         const maxCoord = grid[0].length - 1;
 
         for (let y = 0; y <= maxCoord; y++) {
@@ -78,20 +49,20 @@ function getData() {
 
                 cell.setCoords(x, y);
 
-                if (x > 0 && grid[y][x - 1].value == cell.value + 1) {
-                    cell.next.push(grid[y][x - 1]);
+                if (x > 0 && grid[y][x - 1][value] == cell[value] + 1) {
+                    cell[left] = grid[y][x - 1];
                 }
-                if (x < maxCoord && grid[y][x + 1].value == cell.value + 1) {
-                    cell.next.push(grid[y][x + 1]);
+                if (x < maxCoord && grid[y][x + 1][value] == cell[value] + 1) {
+                    cell[right] = grid[y][x + 1];
                 }
-                if (y > 0 && grid[y - 1][x].value == cell.value + 1) {
-                    cell.next.push(grid[y - 1][x]);
+                if (y > 0 && grid[y - 1][x][value] == cell[value] + 1) {
+                    cell[up] = grid[y - 1][x];
                 }
-                if (y < maxCoord && grid[y + 1][x].value == cell.value + 1) {
-                    cell.next.push(grid[y + 1][x]);
+                if (y < maxCoord && grid[y + 1][x][value] == cell[value] + 1) {
+                    cell[down] = grid[y + 1][x];
                 }
 
-                if (cell.value == 0) {
+                if (cell[value] == 0) {
                     possibleStarts.push(cell);
                 }
             }
