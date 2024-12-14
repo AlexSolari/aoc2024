@@ -1,14 +1,13 @@
 import { parse } from '../util/parse';
 import { Point, Vector } from '../util/point';
 
-// const maxX = 11;
-// const maxY = 7;
 const maxX = 101;
 const maxY = 103;
 
 class Robot {
     position: Point;
     velocity: Vector;
+    stepsTaken = 0;
 
     constructor(pX: number, pY: number, vX: number, vY: number) {
         this.position = new Point(pX, pY);
@@ -16,6 +15,7 @@ class Robot {
     }
 
     move(times: number) {
+        this.stepsTaken += times;
         this.position.x += this.velocity.x * times;
         this.position.y += this.velocity.y * times;
 
@@ -54,7 +54,7 @@ function getDensity(matrix: number[][]) {
         for (let rX = 0; rX < rowLength; rX++) {
             const value = matrix[rY][rX];
 
-            if (value == 0) valuesInARow = 0;
+            if (!value) valuesInARow = 0;
             valuesInARow += 1;
 
             rowDensity += 2 ** (valuesInARow - 1) - 1;
@@ -68,8 +68,7 @@ function getDensity(matrix: number[][]) {
         for (let rX = 0; rX < colLength; rX++) {
             const value = matrix[rX][rY];
 
-            if (value == undefined) console.log(rX, rY);
-            if (value == 0) valuesInARow = 0;
+            if (!value) valuesInARow = 0;
             valuesInARow += 1;
 
             columnDensity += 2 ** (valuesInARow - 1) - 1;
@@ -84,36 +83,23 @@ export async function pt1() {
 
     robots.forEach((r) => r.move(100));
 
-    const map: number[][] = [];
-    for (let y = 0; y < maxY; y++) {
-        const row: number[] = [];
+    let robotsInQ1 = 0,
+        robotsInQ2 = 0,
+        robotsInQ3 = 0,
+        robotsInQ4 = 0;
 
-        for (let x = 0; x < maxX; x++) {
-            row.push(
-                robots.filter((r) => r.position.x == x && r.position.y == y)
-                    .length
-            );
-        }
+    robots.forEach((r) => {
+        if (r.position.x < (maxX - 1) / 2 && r.position.y < (maxY - 1) / 2)
+            robotsInQ1++;
+        else if (r.position.x > (maxX - 1) / 2 && r.position.y < (maxY - 1) / 2)
+            robotsInQ2++;
+        else if (r.position.x < (maxX - 1) / 2 && r.position.y > (maxY - 1) / 2)
+            robotsInQ3++;
+        else if (r.position.x > (maxX - 1) / 2 && r.position.y > (maxY - 1) / 2)
+            robotsInQ4++;
+    });
 
-        map.push(row);
-    }
-
-    const robotsInQ1 = robots.filter(
-        (r) => r.position.x < (maxX - 1) / 2 && r.position.y < (maxY - 1) / 2
-    ).length;
-    const robotsInQ2 = robots.filter(
-        (r) => r.position.x > (maxX - 1) / 2 && r.position.y < (maxY - 1) / 2
-    ).length;
-    const robotsInQ3 = robots.filter(
-        (r) => r.position.x < (maxX - 1) / 2 && r.position.y > (maxY - 1) / 2
-    ).length;
-    const robotsInQ4 = robots.filter(
-        (r) => r.position.x > (maxX - 1) / 2 && r.position.y > (maxY - 1) / 2
-    ).length;
-
-    return [robotsInQ1, robotsInQ2, robotsInQ3, robotsInQ4].reduce(
-        (x, y) => x * y
-    );
+    return robotsInQ1 * robotsInQ2 * robotsInQ3 * robotsInQ4;
 }
 
 export async function pt2() {
@@ -121,29 +107,45 @@ export async function pt2() {
     const map: number[][] = [];
 
     for (let y = 0; y < maxY; y++) {
-        const row: number[] = [];
-        for (let x = 0; x < maxX; x++) {
-            row.push(0);
-        }
+        const row = new Array<number>(maxX);
         map.push(row);
     }
 
-    const densities = [];
+    let maxDensity = 0;
+    let maxDensitySteps = 0;
+    let step = 1;
 
-    for (let index = 0; index < 10_000; index++) {
+    //avg density of randomly distributed robots is hovering around 900-1000, and in case of emerging pattern its around 1400-2000
+    for (let index = 0; index <= 100; index += step) {
         robots.forEach((r) => (map[r.position.x][r.position.y] = 0));
-        robots.forEach((r) => r.move(1));
+        robots.forEach((r) => r.move(step));
         robots.forEach((r) => (map[r.position.x][r.position.y] += 1));
-        densities.push(getDensity(map));
+
+        const density = getDensity(map);
+
+        if (density > maxDensity) {
+            maxDensity = density;
+            maxDensitySteps = robots[0].stepsTaken;
+        }
     }
 
-    //avg density of randomly distributed robots is hovering around 1000, and in case of emerging pattern its around 1300
-    const outliers = densities
-        .map((density, index) => ({
-            density,
-            second: index + 1
-        }))
-        .filter((x) => x.density > 2000);
+    //pattern emerges every 101 steps with some initial offset
+    const offset = maxDensitySteps;
+    step = 101;
+    robots.forEach((r) => r.move(offset - step));
 
-    return outliers;
+    for (let index = offset; index < 10_000; index += step) {
+        robots.forEach((r) => (map[r.position.x][r.position.y] = 0));
+        robots.forEach((r) => r.move(step));
+        robots.forEach((r) => (map[r.position.x][r.position.y] += 1));
+
+        const density = getDensity(map);
+
+        if (density > maxDensity) {
+            maxDensity = density;
+            maxDensitySteps = robots[0].stepsTaken;
+        }
+    }
+
+    return { maxDensity, steps: maxDensitySteps };
 }
