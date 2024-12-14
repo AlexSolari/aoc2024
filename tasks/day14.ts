@@ -28,7 +28,7 @@ class Robot {
     }
 }
 
-async function getData(pt1: boolean) {
+async function getData() {
     return await parse('tasks\\data\\14.txt', (x) =>
         x
             .split('\n')
@@ -44,8 +44,43 @@ async function getData(pt1: boolean) {
     );
 }
 
+function getDensity(matrix: number[][]) {
+    let rowDensity = 0;
+    const colLength = maxY;
+    const rowLength = maxX;
+
+    for (let rY = 0; rY < colLength; rY++) {
+        let valuesInARow = 0;
+        for (let rX = 0; rX < rowLength; rX++) {
+            const value = matrix[rY][rX];
+
+            if (value == 0) valuesInARow = 0;
+            valuesInARow += 1;
+
+            rowDensity += 2 ** (valuesInARow - 1) - 1;
+        }
+    }
+
+    let columnDensity = 0;
+
+    for (let rY = 0; rY < rowLength; rY++) {
+        let valuesInARow = 0;
+        for (let rX = 0; rX < colLength; rX++) {
+            const value = matrix[rX][rY];
+
+            if (value == undefined) console.log(rX, rY);
+            if (value == 0) valuesInARow = 0;
+            valuesInARow += 1;
+
+            columnDensity += 2 ** (valuesInARow - 1) - 1;
+        }
+    }
+
+    return rowDensity + columnDensity;
+}
+
 export async function pt1() {
-    const robots = await getData(true);
+    const robots = await getData();
 
     robots.forEach((r) => r.move(100));
 
@@ -82,34 +117,33 @@ export async function pt1() {
 }
 
 export async function pt2() {
-    // checked a 100 first iteration, emerging pattern was occuring at 77 + 101*N seconds
-    // printed a 100 of thoose seconds and easter egg was on this secondd
-    const answer = 7753;
-    const robots = await getData(true);
-
-    robots.forEach((r) => r.move(answer));
+    const robots = await getData();
     const map: number[][] = [];
 
     for (let y = 0; y < maxY; y++) {
         const row: number[] = [];
-
         for (let x = 0; x < maxX; x++) {
-            row.push(
-                robots.filter((r) => r.position.x == x && r.position.y == y)
-                    .length
-            );
+            row.push(0);
         }
-
         map.push(row);
     }
 
-    Bun.write(
-        'tasks\\data\\out\\14.txt',
-        map
-            .map((x) => x.join(''))
-            .join('\n')
-            .replaceAll('0', '.')
-    );
+    const densities = [];
 
-    return answer;
+    for (let index = 0; index < 10_000; index++) {
+        robots.forEach((r) => (map[r.position.x][r.position.y] = 0));
+        robots.forEach((r) => r.move(1));
+        robots.forEach((r) => (map[r.position.x][r.position.y] += 1));
+        densities.push(getDensity(map));
+    }
+
+    //avg density of randomly distributed robots is hovering around 1000, and in case of emerging pattern its around 1300
+    const outliers = densities
+        .map((density, index) => ({
+            density,
+            second: index + 1
+        }))
+        .filter((x) => x.density > 2000);
+
+    return outliers;
 }
