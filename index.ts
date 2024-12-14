@@ -1,4 +1,4 @@
-import { pt1, pt2 } from './tasks/day13';
+import { pt1, pt2 } from './tasks/day14';
 
 const d2p1 = await pt1();
 console.log(d2p1);
