@@ -1,27 +1,18 @@
 import { down, GridCell, left, right, up, value } from '../util/gridcell';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
+import { TreeNode } from '../util/treeNode';
 
-class TreeNode {
-    node: GridCell<number>;
-    children: TreeNode[];
+function buildTree(root: GridCell<number>): TreeNode<GridCell<number>> {
+    if (root.next.length == 0) return new TreeNode<GridCell<number>>(root);
 
-    constructor(value: GridCell<number>, path?: TreeNode[]) {
-        this.node = value;
-        this.children = path ??= [];
-    }
-}
-
-function buildTree(root: GridCell<number>): TreeNode {
-    if (root.next.length == 0) return new TreeNode(root);
-
-    return new TreeNode(
+    return new TreeNode<GridCell<number>>(
         root,
-        root.next.map((x) => new TreeNode(x, [buildTree(x)]))
+        root.next.map((x) => new TreeNode<GridCell<number>>(x, [buildTree(x)]))
     );
 }
 
-function find9(root: TreeNode): TreeNode[] {
+function find9(root: TreeNode<GridCell<number>>): TreeNode<GridCell<number>>[] {
     if (root.node[value] == 9) return [root];
 
     if (root.children.length == 0) return [];

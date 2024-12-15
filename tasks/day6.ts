@@ -1,12 +1,6 @@
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
-
-enum Direction {
-    Up,
-    Right,
-    Down,
-    Left
-}
+import { Direction } from '../util/direction';
 
 interface Point {
     x: number;
