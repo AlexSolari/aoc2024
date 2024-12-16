@@ -1,3 +1,5 @@
+import { Direction } from './direction';
+
 export class Point {
     x: number;
     y: number;
@@ -14,6 +16,18 @@ export class Point {
     clone() {
         return new Point(this.x, this.y);
     }
+
+    static constant = {
+        map: new Map<string, Point>(),
+        from: function (x: number, y: number) {
+            const key = `${x};${y}`;
+            if (!this.map.has(key)) {
+                this.map.set(key, new Point(x, y));
+            }
+
+            return this.map.get(key)!;
+        }
+    };
 }
 
 export class Vector {
@@ -30,4 +44,17 @@ export class Vector {
         const y = p2.y - p1.y;
         return new Vector(x, y);
     }
+
+    static directions = {
+        [Direction.Up]: new Vector(0, -1),
+        [Direction.Down]: new Vector(0, 1),
+        [Direction.Right]: new Vector(1, 0),
+        [Direction.Left]: new Vector(-1, 0),
+        All: [
+            new Vector(0, -1),
+            new Vector(0, 1),
+            new Vector(1, 0),
+            new Vector(-1, 0)
+        ]
+    };
 }
