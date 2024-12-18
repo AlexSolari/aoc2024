@@ -3,7 +3,7 @@ import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 import { Point, Vector } from '../util/point';
 
-let raw: string[] = [];
+let points: Point[] = [];
 
 enum Values {
     EMPTY = '.',
@@ -129,13 +129,9 @@ class Maze {
 }
 
 async function getData(count: number) {
-    const slice = (
-        await parse('tasks\\data\\18.txt', (input) => {
-            const res = input.split('\r\n');
-            raw = res;
-            return res;
-        })
-    ).slice(0, count);
+    const raw = await parse('tasks\\data\\18.txt', (input) =>
+        input.split('\r\n')
+    );
     const grid: GridCell<string>[][] = [];
     const maxCoordY = 70;
     const maxCoordX = 70;
@@ -166,15 +162,16 @@ async function getData(count: number) {
         }
     }
 
-    slice.forEach((pc) => {
+    raw.forEach((pc, i) => {
         const [x, y] = pc.split(',').map((x) => Number(x));
+        points.push(Point.constant.from(x, y));
 
-        grid[y][x][value] = Values.WALL;
+        if (i < 1024) grid[y][x][value] = Values.WALL;
     });
 
     return new Maze(
         grid,
-        Point.constant.from(0, 0)!,
+        Point.constant.from(0, 0),
         Point.constant.from(maxCoordX, maxCoordY)
     );
 }
@@ -187,17 +184,19 @@ export async function pt1() {
 }
 
 export async function pt2() {
-    let i = 1025;
+    let i = 1024;
     const data = await getData(i);
-    let astar: Point[];
+    let astar: Point[] = data.aStarPath();
 
     do {
-        astar = data.aStarPath();
         i++;
+        const point = points[i];
+        data.grid[point.y][point.x][value] = Values.WALL;
 
-        const [x, y] = raw[i].split(',').map((x) => Number(x));
-        data.grid[y][x][value] = Values.WALL;
+        if (astar.indexOf(point) != -1) {
+            astar = data.aStarPath();
+        }
     } while (astar.length != 0);
 
-    return raw[i - 1];
+    return points[i];
 }
