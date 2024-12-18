@@ -1,4 +1,4 @@
-import { GridCell, up, down, left, right, value } from '../util/gridcell';
+import { GridCell, value, Grid } from '../util/grid';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 import { Point, Vector } from '../util/point';
@@ -132,41 +132,16 @@ async function getData(count: number) {
     const raw = await parse('tasks\\data\\18.txt', (input) =>
         input.split('\r\n')
     );
-    const grid: GridCell<string>[][] = [];
     const maxCoordY = 70;
     const maxCoordX = 70;
 
-    for (let y = 0; y <= maxCoordY; y++) {
-        grid[y] = [];
-        for (let x = 0; x <= maxCoordX; x++) {
-            grid[y][x] = new GridCell<string>(Values.EMPTY, x, y);
-        }
-    }
-
-    for (let y = 0; y <= maxCoordY; y++) {
-        for (let x = 0; x <= maxCoordX; x++) {
-            const cell = grid[y][x];
-
-            if (x > 0 && grid[y][x - 1][value]) {
-                cell[left] = grid[y][x - 1];
-            }
-            if (x < maxCoordX && grid[y][x + 1][value]) {
-                cell[right] = grid[y][x + 1];
-            }
-            if (y > 0 && grid[y - 1][x][value]) {
-                cell[up] = grid[y - 1][x];
-            }
-            if (y < maxCoordY && grid[y + 1][x][value]) {
-                cell[down] = grid[y + 1][x];
-            }
-        }
-    }
+    const grid = Grid.ofSize(maxCoordX, maxCoordY, Values.EMPTY);
 
     raw.forEach((pc, i) => {
         const [x, y] = pc.split(',').map((x) => Number(x));
         points.push(Point.constant.from(x, y));
 
-        if (i < 1024) grid[y][x][value] = Values.WALL;
+        if (i < count) grid[y][x][value] = Values.WALL;
     });
 
     return new Maze(

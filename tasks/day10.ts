@@ -1,4 +1,4 @@
-import { down, GridCell, left, right, up, value } from '../util/gridcell';
+import { down, Grid, GridCell, left, right, up, value } from '../util/grid';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 import { TreeNode } from '../util/treeNode';
@@ -22,24 +22,24 @@ function find9(root: TreeNode<GridCell<number>>): TreeNode<GridCell<number>>[] {
 
 function getData() {
     return parse('tasks\\data\\10.txt', (input) => {
-        const grid = input
+        const raw = input
             .trim()
             .split('\n')
             .map((x) =>
                 x
                     .trim()
                     .split('')
-                    .map((c) => new GridCell<number>(Number(c)))
+                    .map((c) => Number(c))
             );
         const possibleStarts: GridCell<number>[] = [];
-        const maxCoord = grid[0].length - 1;
+        const maxCoord = raw[0].length - 1;
 
-        for (let y = 0; y <= maxCoord; y++) {
-            for (let x = 0; x <= maxCoord; x++) {
-                const cell = grid[y][x];
-
-                cell.setCoords(x, y);
-
+        Grid.ofSizeWithValues(
+            maxCoord,
+            maxCoord,
+            0,
+            raw,
+            (x, y, grid, cell) => {
                 if (x > 0 && grid[y][x - 1][value] == cell[value] + 1) {
                     cell[left] = grid[y][x - 1];
                 }
@@ -57,7 +57,7 @@ function getData() {
                     possibleStarts.push(cell);
                 }
             }
-        }
+        );
 
         return possibleStarts;
     });

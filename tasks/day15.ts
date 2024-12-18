@@ -1,5 +1,5 @@
 import { Direction } from '../util/direction';
-import { GridCell, up, down, left, right, value } from '../util/gridcell';
+import { GridCell, up, down, left, right, value, Grid } from '../util/grid';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 import { Point } from '../util/point';
@@ -162,7 +162,7 @@ class Warehouse {
             const prevElementValue =
                 chainOfUpdates[i + 1]?.[value] ?? Values.EMPTY;
             element[value] = prevElementValue;
-            if (element[value] == '@') {
+            if (element[value] == Values.ROBOT) {
                 this.robotPosition.x = element.x;
                 this.robotPosition.y = element.y;
             }
@@ -228,14 +228,9 @@ function getData(pt2: boolean) {
             );
         }
 
-        const grid = gridString.split('\r\n').map((r) =>
-            r
-                .trim()
-                .split('')
-                .map((c) => new GridCell(c))
-        );
-        const maxCoordY = grid.length - 1;
-        const maxCoordX = grid[0].length - 1;
+        const raw = gridString.split('\r\n').map((r) => r.trim().split(''));
+        const maxCoordY = raw.length - 1;
+        const maxCoordX = raw[0].length - 1;
 
         const directions = directionsString
             .trim()
@@ -256,29 +251,17 @@ function getData(pt2: boolean) {
             })
             .filter((x) => x != undefined);
 
+        const grid = Grid.ofSize<string>(maxCoordX, maxCoordY, Values.EMPTY);
+
         let robotPosition: Point;
 
         for (let y = 0; y <= maxCoordY; y++) {
             for (let x = 0; x <= maxCoordX; x++) {
-                const cell = grid[y][x];
+                const char = raw[y][x];
+                grid[y][x][value] = char;
 
-                cell.setCoords(x, y);
-
-                if (cell[value] == Values.ROBOT)
-                    robotPosition = new Point(x, y);
-
-                if (x > 0 && grid[y][x - 1][value]) {
-                    cell[left] = grid[y][x - 1];
-                }
-                if (x < maxCoordX && grid[y][x + 1][value]) {
-                    cell[right] = grid[y][x + 1];
-                }
-                if (y > 0 && grid[y - 1][x][value]) {
-                    cell[up] = grid[y - 1][x];
-                }
-                if (y < maxCoordY && grid[y + 1][x][value]) {
-                    cell[down] = grid[y + 1][x];
-                }
+                if (char == Values.ROBOT)
+                    robotPosition = Point.constant.from(x, y);
             }
         }
 

@@ -1,5 +1,5 @@
 import { dfs } from '../util/dfs';
-import { GridCell, up, down, left, right, value } from '../util/gridcell';
+import { GridCell, up, down, left, right, value, Grid } from '../util/grid';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 
@@ -91,23 +91,17 @@ function getCorners(region: GridCell<string>[]) {
 
 function getData() {
     return parse('tasks\\data\\12.txt', (input) => {
-        const grid = input
+        const raw = input
             .trim()
             .split('\n')
-            .map((x) =>
-                x
-                    .trim()
-                    .split('')
-                    .map((c) => new GridCell(c))
-            );
-        const maxCoord = grid[0].length - 1;
-
-        for (let y = 0; y <= maxCoord; y++) {
-            for (let x = 0; x <= maxCoord; x++) {
-                const cell = grid[y][x];
-
-                cell.setCoords(x, y);
-
+            .map((x) => x.trim().split(''));
+        const maxCoord = raw[0].length - 1;
+        return Grid.ofSizeWithValues<string>(
+            maxCoord,
+            maxCoord,
+            '',
+            raw,
+            (x, y, grid, cell) => {
                 if (x > 0 && grid[y][x - 1][value] == cell[value]) {
                     cell[left] = grid[y][x - 1];
                 }
@@ -121,9 +115,7 @@ function getData() {
                     cell[down] = grid[y + 1][x];
                 }
             }
-        }
-
-        return grid;
+        );
     });
 }
 

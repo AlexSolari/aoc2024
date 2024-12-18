@@ -26,7 +26,7 @@ async function getData() {
                 const element = row[x];
 
                 if (antennas.has(element)) {
-                    antennasPositions[element].push(new Point(x, y));
+                    antennasPositions[element].push(Point.constant.from(x, y));
                 }
             }
         }

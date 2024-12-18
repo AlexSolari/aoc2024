@@ -1,4 +1,4 @@
-import { GridCell, up, down, left, right, value } from '../util/gridcell';
+import { GridCell, value, Grid } from '../util/grid';
 import { ObjectSet } from '../util/objectSet';
 import { parse } from '../util/parse';
 import { Point, Vector } from '../util/point';
@@ -255,41 +255,24 @@ class Maze {
 
 function getData() {
     return parse('tasks\\data\\16.txt', (input) => {
-        const grid = input.split('\r\n').map((r) =>
-            r
-                .trim()
-                .split('')
-                .map((c) => new GridCell(c))
-        );
-        const maxCoordY = grid.length - 1;
-        const maxCoordX = grid[0].length - 1;
+        const raw = input.split('\r\n').map((r) => r.trim().split(''));
+        const maxCoordY = raw.length - 1;
+        const maxCoordX = raw[0].length - 1;
+
+        const grid = Grid.ofSize<string>(maxCoordX, maxCoordY, Values.EMPTY);
 
         let deerPosition: Point;
         let exitPosition: Point;
 
         for (let y = 0; y <= maxCoordY; y++) {
             for (let x = 0; x <= maxCoordX; x++) {
-                const cell = grid[y][x];
+                const char = raw[y][x];
+                grid[y][x][value] = char;
 
-                cell.setCoords(x, y);
-
-                if (cell[value] == Values.DEER)
+                if (char == Values.DEER)
                     deerPosition = Point.constant.from(x, y);
-                if (cell[value] == Values.EXIT)
+                if (char == Values.EXIT)
                     exitPosition = Point.constant.from(x, y);
-
-                if (x > 0 && grid[y][x - 1][value]) {
-                    cell[left] = grid[y][x - 1];
-                }
-                if (x < maxCoordX && grid[y][x + 1][value]) {
-                    cell[right] = grid[y][x + 1];
-                }
-                if (y > 0 && grid[y - 1][x][value]) {
-                    cell[up] = grid[y - 1][x];
-                }
-                if (y < maxCoordY && grid[y + 1][x][value]) {
-                    cell[down] = grid[y + 1][x];
-                }
             }
         }
 
